@@ -33,7 +33,6 @@ def sample_data():
         df = df[
             ["Pclass", "Sex", "Age", "SibSp", "Parch", "Fare", "Embarked", "Survived"]
         ]
-
         os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
         df.to_csv(DATA_PATH, index=False)
 
@@ -151,6 +150,7 @@ def test_model_inference_time(train_model):
 
     # 推論時間が1秒未満であることを確認
     assert inference_time < 1.0, f"推論時間が長すぎます: {inference_time}秒"
+
 
 def test_model_reproducibility(sample_data, preprocessor):
     """モデルの再現性を検証"""
