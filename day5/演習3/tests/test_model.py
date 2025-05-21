@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import time
+import json
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
@@ -108,17 +109,38 @@ def test_model_exists():
         pytest.skip("モデルファイルが存在しないためスキップします")
     assert os.path.exists(MODEL_PATH), "モデルファイルが存在しません"
 
+ACCURACY_FILE = "accuracies.json"
+
+def load_accuracies():
+    if os.path.exists(ACCURACY_FILE):
+        with open(ACCURACY_FILE, "r") as f:
+            return json.load(f).get("accuracies", [])
+    return []
+
+def save_accuracies(accuracies):
+    with open(ACCURACY_FILE, "w") as f:
+        json.dump({"accuracies": accuracies}, f)
 
 def test_model_accuracy(train_model):
-    """モデルの精度を検証"""
+    """モデルの精度を検証し、過去の精度と比較"""
     model, X_test, y_test = train_model
 
-    # 予測と精度計算
+    # 推論と精度の計算
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
+    
+    print(f"モデルの推論精度: {accuracy:.4f}")
 
-    # Titanicデータセットでは0.75以上の精度が一般的に良いとされる
-    assert accuracy >= 0.75, f"モデルの精度が低すぎます: {accuracy}"
+    if accuracy >= 0.75:
+        accuracies = load_accuracies()
+        accuracies.append(accuracy)
+        save_accuracies(accuracies)
+
+        avg_accuracy = sum(accuracies) / len(accuracies)
+        print(f"保存された過去の平均精度: {avg_accuracy:.4f}")
+
+    # テスト失敗条件
+    assert accuracy >= 0.75, f"モデルの精度が低すぎます: {accuracy:.4f}"
 
 
 def test_model_inference_time(train_model):
