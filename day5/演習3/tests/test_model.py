@@ -109,22 +109,12 @@ def test_model_exists():
         pytest.skip("モデルファイルが存在しないためスキップします")
     assert os.path.exists(MODEL_PATH), "モデルファイルが存在しません"
 
-ACCURACY_FILE = "accuracies.json"
-
-def load_accuracies():
-    if os.path.exists(ACCURACY_FILE):
-        with open(ACCURACY_FILE, "r") as f:
-            return json.load(f).get("accuracies", [])
-    return []
-
-def save_accuracies(accuracies):
-    with open(ACCURACY_FILE, "w") as f:
-        json.dump({"accuracies": accuracies}, f)
-
 def test_model_accuracy(train_model):
     """モデルの精度を検証し、過去の精度と比較"""
     model, X_test, y_test = train_model
-
+    
+    ACCURACY_FILE = "accuracies.json"
+    
     # 推論と精度の計算
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
@@ -132,9 +122,13 @@ def test_model_accuracy(train_model):
     print(f"モデルの推論精度: {accuracy:.4f}")
 
     if accuracy >= 0.75:
-        accuracies = load_accuracies()
+        if os.path.exists(ACCURACY_FILE):
+          with open(ACCURACY_FILE, "r") as f:
+            accuracies = json.load(f).get("accuracies", [])
+
         accuracies.append(accuracy)
-        save_accuracies(accuracies)
+        with open(ACCURACY_FILE, "w") as f:
+          json.dump({"accuracies": accuracies}, f)
 
         avg_accuracy = sum(accuracies) / len(accuracies)
         print(f"保存された過去の平均精度: {avg_accuracy:.4f}")
@@ -151,12 +145,12 @@ def test_model_inference_time(train_model):
     start_time = time.time()
     model.predict(X_test)
     end_time = time.time()
-
+    
     inference_time = end_time - start_time
+    print(f"モデルの推論時間: {inference_time:.4f} 秒")
 
     # 推論時間が1秒未満であることを確認
     assert inference_time < 1.0, f"推論時間が長すぎます: {inference_time}秒"
-
 
 def test_model_reproducibility(sample_data, preprocessor):
     """モデルの再現性を検証"""
